@@ -4,6 +4,7 @@ import { adminOnlyMiddleware } from "../../lib/auth/adminOnly.js";
 import { JWTAuthMiddleware } from "../../lib/auth/jwtAuth.js";
 import { createAccessToken } from "../../lib/auth/tools.js";
 import UsersModel from "./model.js";
+import passport from "passport";
 
 const usersRouter = express.Router();
 
@@ -28,6 +29,21 @@ usersRouter.get(
     } catch (error) {
       next(error);
     }
+  }
+);
+usersRouter.get(
+  "/googleLogin",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+usersRouter.get(
+  "/googleRedirect",
+  passport.authenticate("google", { session: false }),
+  async (req, res, next) => {
+    console.log(req.user);
+    // res.send({ accessToken: req.user.accessToken });
+    res.redirect(
+      `${process.env.FE_DEV_URL}?accessToken=${req.user.accessToken}`
+    );
   }
 );
 
@@ -99,20 +115,16 @@ usersRouter.delete(
 
 usersRouter.post("/login", async (req, res, next) => {
   try {
-    // 1. Obtain the credentials from req.body
     const { email, password } = req.body;
 
-    // 2. Verify the credentials
     const user = await UsersModel.checkCredentials(email, password);
 
     if (user) {
-      // 3.1 If credentials are fine --> generate an access token (JWT) and send it back as a response
       const payload = { _id: user._id, role: user.role };
 
       const accessToken = await createAccessToken(payload);
       res.send({ accessToken });
     } else {
-      // 3.2 If credentials are NOT fine --> trigger a 401 error
       next(createHttpError(401, "Credentials are not ok!"));
     }
   } catch (error) {

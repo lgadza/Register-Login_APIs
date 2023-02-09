@@ -9,14 +9,17 @@ import {
   notFoundErrorHandler,
   unauthorizedErrorHandler,
 } from "./errorHandlers.js";
+import googleStrategy from "./lib/auth/google.js";
+import passport from "passport";
 
 const server = express();
 const port = process.env.PORT || 3001;
+passport.use("google", googleStrategy);
 
 // ***************************** MIDDLEWARES ***************************
 server.use(cors());
 server.use(express.json());
-
+server.use(passport.initialize());
 // ****************************** ENDPOINTS ****************************
 server.use("/users", usersRouter);
 
